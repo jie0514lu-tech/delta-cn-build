@@ -112,6 +112,55 @@ jobs:
           print("total shimmed:", total)
           PY
 
+      - name: Replace Icon Composer .icon with classic AppIcon (actool Xcode 26 bug)
+        run: |
+          cd src
+          set -e
+          ICON_DIR=Resources/Assets.xcassets/AppIcon.appiconset
+          mkdir -p "$ICON_DIR"
+          cp Resources/Icons.xcassets/Raw/AppIcon.imageset/GlassIcon_Light.png "$ICON_DIR/AppIcon-1024.png"
+          cp Resources/Icons.xcassets/Raw/AppIcon.imageset/GlassIcon_Dark.png  "$ICON_DIR/AppIcon-1024-dark.png"
+          cat > "$ICON_DIR/Contents.json" <<'JSON'
+          {
+            "images" : [
+              {
+                "filename" : "AppIcon-1024.png",
+                "idiom" : "universal",
+                "platform" : "ios",
+                "size" : "1024x1024"
+              },
+              {
+                "appearances" : [
+                  {
+                    "appearance" : "luminosity",
+                    "value" : "dark"
+                  }
+                ],
+                "filename" : "AppIcon-1024-dark.png",
+                "idiom" : "universal",
+                "platform" : "ios",
+                "size" : "1024x1024"
+              }
+            ],
+            "info" : {
+              "author" : "xcode",
+              "version" : 1
+            }
+          }
+          JSON
+          python3 - <<'PY'
+          import re
+          p = "Delta.xcodeproj/project.pbxproj"
+          s = open(p, encoding="utf-8").read()
+          pat = re.compile(r"^[ \t]+[0-9A-F]{24} /\* (?:AppIcon|MicrochipIcon)\.icon in Resources \*/,\n", re.M)
+          found = pat.findall(s)
+          s = pat.sub("", s)
+          open(p, "w", encoding="utf-8").write(s)
+          print("removed .icon build-phase entries:", len(found))
+          assert len(found) == 2, "expect AppIcon.icon + MicrochipIcon.icon"
+          PY
+          ls -la "$ICON_DIR"
+
       - name: Build (unsigned)
         run: |
           cd src
