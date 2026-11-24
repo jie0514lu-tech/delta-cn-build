@@ -7,16 +7,17 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 120
 
     steps:
       - name: Checkout recipe
         uses: actions/checkout@v4
 
-      - name: Select newest Xcode 26
+      - name: Select newest Xcode
         run: |
-          XC=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -n 1)
+          ls /Applications | grep -i '^Xcode' || true
+          XC=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -n 1)
           if [ -z "$XC" ]; then XC="/Applications/Xcode.app"; fi
           echo "using: $XC"
           sudo xcode-select -s "$XC/Contents/Developer"
