@@ -70,11 +70,34 @@ jobs:
         run: |
           pod --version || sudo gem install cocoapods --no-document
           pod --version
-
       - name: pod install
         run: |
           cd src
           pod install --repo-update
+
+      - name: Toolchain shim (CoreData 映射模型的编译期版本标记)
+        run: |
+          cd src
+          python3 - <<'PY'
+          import glob, re
+          # 上游映射模型由更高版本 Xcode 生成（Persistence-1629），
+          # runner 最新 Xcode 26.6 的 momc 只支持到 1526，会直接报错中断编译。
+          # 这里只把编译期兼容性标记降到 SDK 支持的值，不改任何实体/属性映射与数据结构。
+          total = 0
+          for path in glob.glob("Delta/Database/Model/Migrations/*.xcmappingmodel/xcmapping.xml"):
+              with open(path, encoding="utf-8") as f:
+                  text = f.read()
+              def repl(m):
+                  return m.group(1) + "1526" + m.group(3)
+              new = re.sub(r"(<key>NSPersistence(?:Maximum)?FrameworkVersion</key>\s*<integer>)(\d+)(</integer>)",
+                           repl, text)
+              if new != text:
+                  with open(path, "w", encoding="utf-8") as f:
+                      f.write(new)
+                  total += 1
+                  print("shimmed:", path)
+          print("total shimmed:", total)
+          PY
 
       - name: Build (unsigned)
         run: |
