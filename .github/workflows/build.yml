@@ -14,11 +14,14 @@ jobs:
       - name: Checkout recipe
         uses: actions/checkout@v4
 
-      - name: Select newest Xcode
+      - name: Select Xcode (26.4.1 优先，规避 actool .icon 崩溃)
         run: |
           ls /Applications | grep -i '^Xcode' || true
-          XC=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -n 1)
-          if [ -z "$XC" ]; then XC="/Applications/Xcode.app"; fi
+          XC=""
+          for cand in /Applications/Xcode_26.4.1.app /Applications/Xcode_26.4.app /Applications/Xcode_26.3.app; do
+            if [ -d "$cand" ]; then XC="$cand"; break; fi
+          done
+          if [ -z "$XC" ]; then XC=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -n 1); fi
           echo "using: $XC"
           sudo xcode-select -s "$XC/Contents/Developer"
           xcodebuild -version
