@@ -2,12 +2,12 @@
 //  LanguageManager.swift
 //  Delta
 //
-//  中英双语支持：运行时切换语言（跟随系统 / English / 简体中文）
+//  简体中文 / English 运行时切换
 //
-//  工作方式：
-//  1. 应用启动时把 Bundle.main 的 isa 换成 DeltaLanguageBundle，
-//     让所有 NSLocalizedString / SwiftUI LocalizedStringKey 的查表走指定 .lproj。
-//  2. 用户在设置里选择语言后，立即重新绑定语言包，并提示重启以让已渲染的界面生效。
+//  实现要点：
+//  1. 用类级 swizzle 接管 Bundle 的 localizedString / url(forResource:) / path(forResource:)，
+//     这样 Bundle.main、Bundle(for: XXX.self) 等所有指向主包的实例都会走当前语言。
+//  2. 用户选择语言后立刻重新绑定，并重建根视图（免重启）；正在游戏时退化为提示重启。
 //
 
 import Foundation
@@ -25,7 +25,7 @@ enum DeltaLanguage: String, CaseIterable, Identifiable
 
     var id: String { self.rawValue }
 
-    /// 用于查找对应 .lproj 的语言代码；nil 表示交回系统决定。
+    /// 用于查找 .lproj 的语言代码；nil 表示交回系统决定。
     var bundleCode: String? {
         switch self
         {
@@ -45,20 +45,62 @@ enum DeltaLanguage: String, CaseIterable, Identifiable
     }
 }
 
-// MARK: - Bundle 语言重定向
+// MARK: - Bundle 语言重定向（类级 swizzle）
 
-private var deltaLanguageBundleKey: UInt8 = 0
-
-final class DeltaLanguageBundle: Bundle
+extension Bundle
 {
-    override func localizedString(forKey key: String, value: String?, table tableName: String?) -> String
+    static func delta_installLanguageSwizzle()
     {
-        guard let languageBundle = objc_getAssociatedObject(self, &deltaLanguageBundleKey) as? Bundle else {
-            // 没有指定语言（跟随系统）→ 走系统默认查找
-            return super.localizedString(forKey: key, value: value, table: tableName)
+        let cls: AnyClass = Bundle.self
+
+        func swap(_ original: Selector, _ replacement: Selector)
+        {
+            guard
+                let a = class_getInstanceMethod(cls, original),
+                let b = class_getInstanceMethod(cls, replacement)
+            else { return }
+            method_exchangeImplementations(a, b)
         }
 
-        return languageBundle.localizedString(forKey: key, value: value, table: tableName)
+        swap(#selector(Bundle.localizedString(forKey:value:table:)),
+             #selector(Bundle.delta_localizedString(forKey:value:table:)))
+        swap(#selector(Bundle.url(forResource:withExtension:)),
+             #selector(Bundle.delta_url(forResource:withExtension:)))
+        swap(#selector(Bundle.path(forResource:ofType:)),
+             #selector(Bundle.delta_path(forResource:ofType:)))
+    }
+
+    private var delta_languageOverrideBundle: Bundle? {
+        guard self.bundlePath == Bundle.main.bundlePath else { return nil }
+        return LanguageManager.shared.activeBundle
+    }
+
+    @objc func delta_localizedString(forKey key: String, value: String?, table tableName: String?) -> String
+    {
+        if let override = self.delta_languageOverrideBundle
+        {
+            return override.localizedString(forKey: key, value: value, table: tableName)
+        }
+        // swizzle 之后，delta_ 前缀的 selector 指向原实现
+        return self.delta_localizedString(forKey: key, value: value, table: tableName)
+    }
+
+    @objc func delta_url(forResource name: String?, withExtension ext: String?) -> URL?
+    {
+        if let override = self.delta_languageOverrideBundle, let url = override.url(forResource: name, withExtension: ext)
+        {
+            return url
+        }
+        return self.delta_url(forResource: name, withExtension: ext)
+    }
+
+    @objc func delta_path(forResource name: String?, ofType ext: String?) -> String?
+    {
+        if let override = self.delta_languageOverrideBundle, let path = override.path(forResource: name, ofType: ext)
+        {
+            return path
+        }
+        return self.delta_path(forResource: name, ofType: ext)
     }
 }
 
@@ -74,15 +116,16 @@ final class LanguageManager: ObservableObject
 
     @Published private(set) var language: DeltaLanguage
 
+    /// 当前选中的语言包；nil 表示跟随系统
+    private(set) var activeBundle: Bundle?
+
     private init()
     {
         let stored = UserDefaults.standard.string(forKey: LanguageManager.defaultsKey)
         self.language = stored.flatMap(DeltaLanguage.init(rawValue:)) ?? .system
-
-        self.bindLanguageBundle(self.language.bundleCode)
     }
 
-    /// 用户切换语言：立刻生效到后续所有本地化查找，并广播通知。
+    /// 用户切换语言：立刻生效到后续所有查表与资源加载。
     func select(_ language: DeltaLanguage)
     {
         guard language != self.language else { return }
@@ -90,7 +133,7 @@ final class LanguageManager: ObservableObject
         UserDefaults.standard.set(language.rawValue, forKey: LanguageManager.defaultsKey)
         self.language = language
 
-        self.bindLanguageBundle(language.bundleCode)
+        self.applyCurrentLanguage()
 
         NotificationCenter.default.post(name: LanguageManager.didChangeNotification, object: self, userInfo: nil)
 
@@ -100,24 +143,25 @@ final class LanguageManager: ObservableObject
     /// 启动时应用已保存的选择（AppDelegate 调用）。
     func applyStoredLanguage()
     {
-        self.bindLanguageBundle(self.language.bundleCode)
+        Bundle.delta_installLanguageSwizzle()
+        self.applyCurrentLanguage()
     }
 
-    private func bindLanguageBundle(_ code: String?)
+    private func applyCurrentLanguage()
     {
-        object_setClass(Bundle.main, DeltaLanguageBundle.self)
+        Bundle.delta_installLanguageSwizzle()
 
         guard
-            let code = code,
+            let code = self.language.bundleCode,
             let path = Bundle.main.path(forResource: code, ofType: "lproj"),
-            let languageBundle = Bundle(path: path)
+            let bundle = Bundle(path: path)
         else
         {
-            objc_setAssociatedObject(Bundle.main, &deltaLanguageBundleKey, nil, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            self.activeBundle = nil
             return
         }
 
-        objc_setAssociatedObject(Bundle.main, &deltaLanguageBundleKey, languageBundle, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        self.activeBundle = bundle
     }
 }
 
@@ -125,7 +169,6 @@ final class LanguageManager: ObservableObject
 
 extension LanguageManager
 {
-    /// 切换语言后稍等片场再刷新，让设置页先完成消失动画。
     static func reloadInterfaceAfterDelay()
     {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
@@ -136,8 +179,7 @@ extension LanguageManager
         }
     }
 
-    /// 重建根视图：所有界面按新语言重新创建 / 重新查表，用户不需要手动重启。
-    /// 返回 false 表示当前状况不适合重建（例如游戏正在运行），此时退化为提示重启。
+    /// 重建根视图：所有界面按新语言重新创建，用户无需手动重启。
     @discardableResult
     static func reloadInterface() -> Bool
     {
@@ -147,7 +189,7 @@ extension LanguageManager
             let window = windowScene.windows.first(where: { $0.isKeyWindow }) ?? windowScene.windows.first
         else { return false }
 
-        // 正在模拟游戏中：重建会打断会话，交给用户决定何时重启
+        // 正在模拟游戏中：重建会打断会话
         if let sceneDelegate = windowScene.delegate as? SceneDelegate, sceneDelegate.game != nil
         {
             return false
@@ -163,7 +205,6 @@ extension LanguageManager
         return true
     }
 
-    /// 无法即时刷新时的兜底提示。
     static func presentRestartNotice()
     {
         let windowScenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
