@@ -13,6 +13,7 @@
 import Foundation
 import ObjectiveC.runtime
 import Combine
+import UIKit
 
 // MARK: - 语言
 
@@ -92,6 +93,8 @@ final class LanguageManager: ObservableObject
         self.bindLanguageBundle(language.bundleCode)
 
         NotificationCenter.default.post(name: LanguageManager.didChangeNotification, object: self, userInfo: nil)
+
+        LanguageManager.reloadInterfaceAfterDelay()
     }
 
     /// 启动时应用已保存的选择（AppDelegate 调用）。
@@ -115,5 +118,68 @@ final class LanguageManager: ObservableObject
         }
 
         objc_setAssociatedObject(Bundle.main, &deltaLanguageBundleKey, languageBundle, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+    }
+}
+
+// MARK: - 免重启刷新界面
+
+extension LanguageManager
+{
+    /// 切换语言后稍等片场再刷新，让设置页先完成消失动画。
+    static func reloadInterfaceAfterDelay()
+    {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            if !LanguageManager.reloadInterface()
+            {
+                LanguageManager.presentRestartNotice()
+            }
+        }
+    }
+
+    /// 重建根视图：所有界面按新语言重新创建 / 重新查表，用户不需要手动重启。
+    /// 返回 false 表示当前状况不适合重建（例如游戏正在运行），此时退化为提示重启。
+    @discardableResult
+    static func reloadInterface() -> Bool
+    {
+        let windowScenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        guard
+            let windowScene = windowScenes.first(where: { $0.activationState == .foregroundActive }) ?? windowScenes.first,
+            let window = windowScene.windows.first(where: { $0.isKeyWindow }) ?? windowScene.windows.first
+        else { return false }
+
+        // 正在模拟游戏中：重建会打断会话，交给用户决定何时重启
+        if let sceneDelegate = windowScene.delegate as? SceneDelegate, sceneDelegate.game != nil
+        {
+            return false
+        }
+
+        let storyboard = UIStoryboard(name: "Main", bundle: .main)
+        guard let rootViewController = storyboard.instantiateInitialViewController() else { return false }
+
+        UIView.transition(with: window, duration: 0.3, options: [.transitionCrossDissolve]) {
+            window.rootViewController = rootViewController
+        }
+
+        return true
+    }
+
+    /// 无法即时刷新时的兜底提示。
+    static func presentRestartNotice()
+    {
+        let windowScenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        guard let windowScene = windowScenes.first(where: { $0.activationState == .foregroundActive }) ?? windowScenes.first,
+              var topViewController = (windowScene.windows.first(where: { $0.isKeyWindow }) ?? windowScene.windows.first)?.rootViewController
+        else { return }
+
+        while let presented = topViewController.presentedViewController
+        {
+            topViewController = presented
+        }
+
+        let alertController = UIAlertController(title: NSLocalizedString("Language Changed", comment: ""),
+                                                message: NSLocalizedString("Please restart Delta to apply the new language.", comment: ""),
+                                                preferredStyle: .alert)
+        alertController.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .cancel))
+        topViewController.present(alertController, animated: true)
     }
 }
