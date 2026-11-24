@@ -551,13 +551,13 @@ struct DeltaLegalDocumentView: View
     }
 
     private var body_: String {
-'        let isChinese: Bool
+        let isChinese: Bool
         switch LanguageManager.shared.language
         {
         case .chinese: isChinese = true
         case .english: isChinese = false
         case .system: isChinese = Locale.preferredLanguages.first?.hasPrefix("zh") ?? false
-        }'
+        }
         switch self.document
         {
         case .privacy: return isChinese ? DeltaLegalText.privacyZH : DeltaLegalText.privacyEN
