@@ -1,4 +1,4 @@
-﻿name: Build Delta CN IPA
+name: Build Delta CN IPA
 
 on:
   workflow_dispatch:
@@ -14,13 +14,6 @@ jobs:
       - name: Checkout recipe
         uses: actions/checkout@v4
 
-      - name: Toolchain info
-        run: |
-          sw_vers
-          ls /Applications | grep -i xcode || true
-          xcodebuild -version
-          xcrun --sdk iphoneos --show-sdk-version
-
       - name: Select newest Xcode 26
         run: |
           XC=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -n 1)
@@ -30,6 +23,7 @@ jobs:
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-version
           swift --version
+          sw_vers
 
       - name: Clone Delta (pinned commit) + submodules
         run: |
@@ -42,18 +36,34 @@ jobs:
           git submodule update --init --recursive --depth 1
           echo "submodules:"; git submodule status | head -20
 
-      - name: Apply delta-cn patch + overlay
+      - name: Apply translation patch + overlay
         run: |
           cd src
           git apply -v ../patch/delta-cn.patch
-          cp -Rv ../overlay/. .
-          echo "--- 鏈湴鍖栬祫婧?---"
+          cp -R ../overlay/. .
+          echo "--- 本地化资源 ---"
           ls -la Resources/zh-Hans.lproj Resources/en.lproj
-          echo "--- 璇█绠＄悊鍣?---"
+          echo "--- 语言管理器 ---"
           ls -la Delta/Localization/LanguageManager.swift
-          echo "--- 鍏ュ彛宸叉敼 ---"
+          echo "--- 唯一进入 App 的代码改动 ---"
           grep -n "applyStoredLanguage" Delta/AppDelegate.swift
           grep -n "LanguageSection" Delta/Settings/SettingsView.swift
+          grep -n "CFBundleLocalizations" "Delta/Supporting Files/Info.plist"
+
+      - name: Handled strings post-build (drop from Resources phase)
+        run: |
+          cd src
+          python3 - <<'PY'
+          import re
+          p = "Delta.xcodeproj/project.pbxproj"
+          s = open(p, encoding="utf-8").read()
+          pat = re.compile(r"^[ \t]+[0-9A-F]{24} /\* Localizable\.strings in Resources \*/,\n", re.M)
+          before = len(pat.findall(s))
+          s2 = pat.sub("", s)
+          open(p, "w", encoding="utf-8").write(s2)
+          print("removed entries:", before)
+          assert before == 1, "expect exactly one build-phase entry"
+          PY
 
       - name: Install CocoaPods
         run: |
@@ -88,7 +98,8 @@ jobs:
           cd src
           APP=$(find build/Build/Products -maxdepth 3 -name 'Delta.app' -type d | head -n 1)
           echo "APP=$APP"
-          test -d "$APP" || { echo "鏋勫缓澶辫触锛氭壘涓嶅埌 Delta.app"; tail -n 200 build.log; exit 1; }
+          test -d "$APP" || { echo "构建失败：找不到 Delta.app"; tail -n 200 build.log; exit 1; }
+
           for L in zh-Hans en; do
             mkdir -p "$APP/$L.lproj"
             for f in Resources/$L.lproj/*.strings; do
@@ -96,15 +107,15 @@ jobs:
               cp -f "$f" "$APP/$L.lproj/"
             done
           done
-          echo "--- bundle 鍐呮湰鍦板寲 ---"
+
+          echo "--- bundle 内本地化 ---"
           ls -la "$APP/zh-Hans.lproj"
           /usr/libexec/PlistBuddy -c "Print :CFBundleLocalizations" "$APP/Info.plist"
-          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Info.plist" || true
+
           rm -rf Payload Delta-CN-unsigned.ipa
           mkdir -p Payload
           cp -R "$APP" Payload/
-          ZIPOPTS=(-qry)
-          /usr/bin/zip "${ZIPOPTS[@]}" Delta-CN-unsigned.ipa Payload
+          /usr/bin/zip -qry Delta-CN-unsigned.ipa Payload
           ls -lh Delta-CN-unsigned.ipa
           shasum -a 256 Delta-CN-unsigned.ipa | tee sha256.txt
 
