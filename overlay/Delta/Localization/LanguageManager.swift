@@ -4,10 +4,11 @@
 //
 //  简体中文 / English 运行时切换
 //
-//  实现要点：
-//  1. 用类级 swizzle 接管 Bundle 的 localizedString / url(forResource:) / path(forResource:)，
-//     这样 Bundle.main、Bundle(for: XXX.self) 等所有指向主包的实例都会走当前语言。
-//  2. 用户选择语言后立刻重新绑定，并重建根视图（免重启）；正在游戏时退化为提示重启。
+//  说明：
+//  * Swift / SwiftUI 侧的文案由 Bundle 类级 swizzle 即时重定向；
+//  * 但 storyboard / xib 的本地化由 iOS 在**进程启动时**按 AppleLanguages 解析并缓存，
+//    运行中无法改变（UIKit 不走 NSBundle 的消息派发），因此写入 AppleLanguages 后
+//    需要重启进程才能让 UIKit 界面也切到新语言。
 //
 
 import Foundation
@@ -81,7 +82,6 @@ extension Bundle
         {
             return override.localizedString(forKey: key, value: value, table: tableName)
         }
-        // swizzle 之后，delta_ 前缀的 selector 指向原实现
         return self.delta_localizedString(forKey: key, value: value, table: tableName)
     }
 
@@ -125,7 +125,7 @@ final class LanguageManager: ObservableObject
         self.language = stored.flatMap(DeltaLanguage.init(rawValue:)) ?? .system
     }
 
-    /// 用户切换语言：立刻生效到后续所有查表与资源加载。
+    /// 用户切换语言
     func select(_ language: DeltaLanguage)
     {
         guard language != self.language else { return }
@@ -133,18 +133,18 @@ final class LanguageManager: ObservableObject
         UserDefaults.standard.set(language.rawValue, forKey: LanguageManager.defaultsKey)
         self.language = language
 
+        LanguageManager.writeAppleLanguages(language)
         self.applyCurrentLanguage()
 
         NotificationCenter.default.post(name: LanguageManager.didChangeNotification, object: self, userInfo: nil)
-
-        LanguageManager.reloadInterfaceAfterDelay()
     }
 
-    /// 启动时应用已保存的选择（AppDelegate 调用）。
+    /// 启动时应用已保存的选择（AppDelegate 调用）
     func applyStoredLanguage()
     {
         Bundle.delta_installLanguageSwizzle()
         self.applyCurrentLanguage()
+        LanguageManager.writeAppleLanguages(self.language)
     }
 
     private func applyCurrentLanguage()
@@ -163,23 +163,40 @@ final class LanguageManager: ObservableObject
 
         self.activeBundle = bundle
     }
+
+    /// 写入 AppleLanguages：iOS 下次启动时会按这个顺序解析 .lproj（含 storyboard）
+    private static func writeAppleLanguages(_ language: DeltaLanguage)
+    {
+        let defaults = UserDefaults.standard
+
+        if let code = language.bundleCode
+        {
+            var languages = [code]
+            if code != "en" { languages.append("en") }
+            defaults.set(languages, forKey: "AppleLanguages")
+        }
+        else
+        {
+            defaults.removeObject(forKey: "AppleLanguages")
+        }
+        defaults.synchronize()
+    }
 }
 
-// MARK: - 免重启刷新界面
+// MARK: - 切换后的界面刷新 / 重启提示
 
 extension LanguageManager
 {
-    static func reloadInterfaceAfterDelay()
+    /// 切换语言后：SwiftUI 侧即时刷新；storyboard（UIKit）侧需重启进程才生效，因此总是提示重启。
+    static func refreshAfterLanguageChange()
     {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-            if !LanguageManager.reloadInterface()
-            {
-                LanguageManager.presentRestartNotice()
-            }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            LanguageManager.reloadInterface()
+            LanguageManager.presentRestartAlert()
         }
     }
 
-    /// 重建根视图：所有界面按新语言重新创建，用户无需手动重启。
+    /// 重建根视图：让已经创建好的 SwiftUI / Swift 侧界面立即用新语言重新渲染。
     @discardableResult
     static func reloadInterface() -> Bool
     {
@@ -189,7 +206,7 @@ extension LanguageManager
             let window = windowScene.windows.first(where: { $0.isKeyWindow }) ?? windowScene.windows.first
         else { return false }
 
-        // 正在模拟游戏中：重建会打断会话
+        // 正在模拟游戏中：重建会打断会话，交给用户决定何时重启
         if let sceneDelegate = windowScene.delegate as? SceneDelegate, sceneDelegate.game != nil
         {
             return false
@@ -205,7 +222,8 @@ extension LanguageManager
         return true
     }
 
-    static func presentRestartNotice()
+    /// 提示重启（storyboard 界面的本地化在进程启动时解析，无法运行中切换）
+    static func presentRestartAlert()
     {
         let windowScenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
         guard let windowScene = windowScenes.first(where: { $0.activationState == .foregroundActive }) ?? windowScenes.first,
@@ -220,7 +238,10 @@ extension LanguageManager
         let alertController = UIAlertController(title: NSLocalizedString("Language Changed", comment: ""),
                                                 message: NSLocalizedString("Please restart Delta to apply the new language.", comment: ""),
                                                 preferredStyle: .alert)
-        alertController.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .cancel))
+        alertController.addAction(UIAlertAction(title: NSLocalizedString("Restart now", comment: ""), style: .default) { _ in
+            exit(0)
+        })
+        alertController.addAction(UIAlertAction(title: NSLocalizedString("Later", comment: ""), style: .cancel))
         topViewController.present(alertController, animated: true)
     }
 }
