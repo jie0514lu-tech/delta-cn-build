@@ -99,7 +99,7 @@ index 162a286..41ec826 100644
          self.configureAppearance()
          self.updateSettings()
 diff --git a/Delta/Settings/SettingsView.swift b/Delta/Settings/SettingsView.swift
-index 38bd4dc..b9db4d8 100644
+index 38bd4dc..632a1b8 100644
 --- a/Delta/Settings/SettingsView.swift
 +++ b/Delta/Settings/SettingsView.swift
 @@ -39,6 +39,7 @@ struct SettingsView: View
@@ -110,7 +110,7 @@ index 38bd4dc..b9db4d8 100644
                  ServicesSection()
                  MiscellaneousSection()
                  CreditsSection()
-@@ -390,6 +391,48 @@ private struct DisplaySection: View
+@@ -390,6 +391,45 @@ private struct DisplaySection: View
      }
  }
  
@@ -121,8 +121,8 @@ index 38bd4dc..b9db4d8 100644
 +    @ObservedObject
 +    private var languageManager: LanguageManager = .shared
 +
-+    @SwiftUI.State
-+    private var didChangeLanguage = false
++    @Environment(\.dismiss)
++    private var dismiss
 +
 +    var body: some View {
 +        Section {
@@ -132,7 +132,9 @@ index 38bd4dc..b9db4d8 100644
 +                guard newLanguage != languageManager.language else { return }
 +
 +                languageManager.select(newLanguage)
-+                didChangeLanguage = true
++
++                // 关掉设置页，让根视图按新语言重建后立即可见
++                dismiss()
 +            })) {
 +                ForEach(DeltaLanguage.allCases) { language in
 +                    Text(language.displayName).tag(language)
@@ -146,12 +148,7 @@ index 38bd4dc..b9db4d8 100644
 +            }
 +            .pickerStyle(.menu)
 +        } footer: {
-+            Text("Restart Delta to apply the new language everywhere.")
-+        }
-+        .alert("Language Changed", isPresented: $didChangeLanguage) {
-+            Button("OK", role: .cancel) {}
-+        } message: {
-+            Text("Please restart Delta to apply the new language.")
++            Text("Switching applies immediately; restart Delta if a game is running.")
 +        }
 +    }
 +}
