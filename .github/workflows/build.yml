@@ -1,4 +1,4 @@
-name: Build Delta CN IPA
+﻿name: Build Delta CN IPA
 
 on:
   workflow_dispatch:
@@ -47,11 +47,11 @@ jobs:
           cd src
           git apply -v ../patch/delta-cn.patch
           cp -Rv ../overlay/. .
-          echo "--- 本地化资源 ---"
-          ls -la Delta/Resources/zh-Hans.lproj Delta/Resources/en.lproj
-          echo "--- 语言管理器 ---"
+          echo "--- 鏈湴鍖栬祫婧?---"
+          ls -la Resources/zh-Hans.lproj Resources/en.lproj
+          echo "--- 璇█绠＄悊鍣?---"
           ls -la Delta/Localization/LanguageManager.swift
-          echo "--- 入口已改 ---"
+          echo "--- 鍏ュ彛宸叉敼 ---"
           grep -n "applyStoredLanguage" Delta/AppDelegate.swift
           grep -n "LanguageSection" Delta/Settings/SettingsView.swift
 
@@ -88,7 +88,7 @@ jobs:
           cd src
           APP=$(find build/Build/Products -maxdepth 3 -name 'Delta.app' -type d | head -n 1)
           echo "APP=$APP"
-          test -d "$APP" || { echo "构建失败：找不到 Delta.app"; tail -n 200 build.log; exit 1; }
+          test -d "$APP" || { echo "鏋勫缓澶辫触锛氭壘涓嶅埌 Delta.app"; tail -n 200 build.log; exit 1; }
           for L in zh-Hans en; do
             mkdir -p "$APP/$L.lproj"
             for f in Resources/$L.lproj/*.strings; do
@@ -96,7 +96,7 @@ jobs:
               cp -f "$f" "$APP/$L.lproj/"
             done
           done
-          echo "--- bundle 内本地化 ---"
+          echo "--- bundle 鍐呮湰鍦板寲 ---"
           ls -la "$APP/zh-Hans.lproj"
           /usr/libexec/PlistBuddy -c "Print :CFBundleLocalizations" "$APP/Info.plist"
           /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Info.plist" || true
