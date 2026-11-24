@@ -61,20 +61,6 @@ jobs:
           grep -n "LanguageSection" Delta/Settings/SettingsView.swift
           grep -n "CFBundleLocalizations" "Delta/Supporting Files/Info.plist"
 
-      - name: Handled strings post-build (drop from Resources phase)
-        run: |
-          cd src
-          python3 - <<'PY'
-          import re
-          p = "Delta.xcodeproj/project.pbxproj"
-          s = open(p, encoding="utf-8").read()
-          pat = re.compile(r"^[ \t]+[0-9A-F]{24} /\* Localizable\.strings in Resources \*/,\n", re.M)
-          before = len(pat.findall(s))
-          s2 = pat.sub("", s)
-          open(p, "w", encoding="utf-8").write(s2)
-          print("removed entries:", before)
-          assert before == 1, "expect exactly one build-phase entry"
-          PY
 
       - name: Install CocoaPods
         run: |
