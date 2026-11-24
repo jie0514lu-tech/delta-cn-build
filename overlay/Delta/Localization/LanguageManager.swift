@@ -187,13 +187,31 @@ final class LanguageManager: ObservableObject
 
 extension LanguageManager
 {
-    /// 切换语言后：SwiftUI 侧即时刷新；storyboard（UIKit）侧需重启进程才生效，因此总是提示重启。
+    /// 切换语言后：直接重启进程，让 iOS 按新的 AppleLanguages 重新解析所有 .lproj（含 storyboard）。
+    /// 若当前正在模拟游戏中，则先弹窗询问，避免打断游戏会话。
     static func refreshAfterLanguageChange()
     {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-            LanguageManager.reloadInterface()
-            LanguageManager.presentRestartAlert()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            if LanguageManager.isGameRunning
+            {
+                LanguageManager.presentRestartAlert()
+            }
+            else
+            {
+                exit(0)
+            }
         }
+    }
+
+    /// 当前是否正在游戏中
+    static var isGameRunning: Bool
+    {
+        let windowScenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        guard let windowScene = windowScenes.first(where: { $0.activationState == .foregroundActive }) ?? windowScenes.first,
+              let sceneDelegate = windowScene.delegate as? SceneDelegate
+        else { return false }
+
+        return sceneDelegate.game != nil
     }
 
     /// 重建根视图：让已经创建好的 SwiftUI / Swift 侧界面立即用新语言重新渲染。
