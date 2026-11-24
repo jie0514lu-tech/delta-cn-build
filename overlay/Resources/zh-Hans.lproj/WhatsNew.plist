@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<array>
+	<dict>
+		<key>caption</key>
+		<string>为 iOS 26 设计的全新外观。</string>
+		<key>icon</key>
+		<string>drop.fill</string>
+		<key>isPatronExclusive</key>
+		<false/>
+		<key>name</key>
+		<string>Liquid Glass 界面</string>
+	</dict>
+	<dict>
+		<key>caption</key>
+		<string>用我们华丽的全新手柄皮肤畅玩你喜欢的 Genesis 游戏。</string>
+		<key>icon</key>
+		<string>gamecontroller.fill</string>
+		<key>isPatronExclusive</key>
+		<false/>
+		<key>name</key>
+		<string>Sega Genesis</string>
+	</dict>
+	<dict>
+		<key>caption</key>
+		<string>连接 RetroAchievements 账号即可解锁游戏成就。</string>
+		<key>icon</key>
+		<string>trophy.fill</string>
+		<key>isPatronExclusive</key>
+		<false/>
+		<key>name</key>
+		<string>RetroAchievements</string>
+	</dict>
+	<dict>
+		<key>caption</key>
+		<string>自定义通过 AirPlay 投屏到电视时的游戏外观。</string>
+		<key>icon</key>
+		<string>photo.tv</string>
+		<key>isPatronExclusive</key>
+		<true/>
+		<key>name</key>
+		<string>AirPlay 皮肤</string>
+	</dict>
+</array>
+</plist>
