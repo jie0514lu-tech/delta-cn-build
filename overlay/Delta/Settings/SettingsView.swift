@@ -383,8 +383,9 @@ private struct LanguageSection: View
 
                 languageManager.select(newLanguage)
 
-                // 关掉设置页，让根视图按新语言重建后立即可见
+                // 关掉设置页，随后由 LanguageManager 刷新界面并提示重启
                 dismiss()
+                LanguageManager.refreshAfterLanguageChange()
             })) {
                 ForEach(DeltaLanguage.allCases) { language in
                     Text(language.displayName).tag(language)
@@ -398,7 +399,7 @@ private struct LanguageSection: View
             }
             .pickerStyle(.menu)
         } footer: {
-            Text("Switching applies immediately; restart Delta if a game is running.")
+            Text("Restart Delta to apply the new language everywhere.")
         }
     }
 }
