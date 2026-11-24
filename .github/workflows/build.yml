@@ -135,17 +135,38 @@ jobs:
           import re
           p = "Delta.xcodeproj/project.pbxproj"
           s = open(p, encoding="utf-8").read()
-          # 1) 移除 Icon Composer .icon
           pat1 = re.compile(r"^[ \t]+[0-9A-F]{24} /\* (?:AppIcon|MicrochipIcon)\.icon in Resources \*/,\n", re.M)
           found1 = pat1.findall(s)
           s = pat1.sub("", s)
-          # 2) 备用图标 catalog（含大量 appiconset）在 CI 环境同样触发 actool 崩溃，一并移出编译
-          pat2 = re.compile(r"^[ \t]+[0-9A-F]{24} /\* Icons\.xcassets in Resources \*/,\n", re.M)
-          found2 = pat2.findall(s)
-          s = pat2.sub("", s)
           open(p, "w", encoding="utf-8").write(s)
-          print("removed .icon entries:", len(found1), " removed Icons.xcassets entries:", len(found2))
+          print("removed .icon entries:", len(found1))
           PY
+
+          # Icons.xcassets（备用图标）能否编译，取决于 actool 是否踩到这个 Xcode 的 bug：
+          # 先单独试编一次，成功就保留（图标预览/切换可用），失败才移出编译。
+          ACTOOL="$(xcode-select -p)/usr/bin/actool"
+          mkdir -p /tmp/icons_test
+          if "$ACTOOL" Resources/Icons.xcassets --compile /tmp/icons_test \
+               --output-format human-readable-text --platform iphoneos \
+               --minimum-deployment-target 17.4 --target-device iphone --target-device ipad \
+               --bundle-identifier com.rileytestut.Delta --development-region English \
+               < /dev/null > /tmp/icons_test.log 2>&1; then
+            echo "Icons.xcassets: actool OK（保留备用图标）"
+          else
+            echo "Icons.xcassets: actool 崩溃，移出编译"
+            tail -n 5 /tmp/icons_test.log
+            python3 - <<'PY'
+          import re
+          p = "Delta.xcodeproj/project.pbxproj"
+          s = open(p, encoding="utf-8").read()
+          pat = re.compile(r"^[ \t]+[0-9A-F]{24} /\* Icons\.xcassets in Resources \*/,\n", re.M)
+          found = pat.findall(s)
+          s = pat.sub("", s)
+          open(p, "w", encoding="utf-8").write(s)
+          print("removed Icons.xcassets entries:", len(found))
+          PY
+          fi
+          ls -la Resources/Assets.xcassets/AppIcon.appiconset
           ls -la "$ICON_DIR"
 
 
