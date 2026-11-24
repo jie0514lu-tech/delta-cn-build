@@ -348,13 +348,10 @@ private extension AltAppIconsViewController
             
             let isSelected = UIApplication.shared.alternateIconName == icon.imageName || (UIApplication.shared.alternateIconName == nil && icon.imageName == AltIcon.defaultIconName)
 
-            var nameColor = Color.primary
-            if section.isPatronExclusive && !PurchaseManager.shared.isPatronIconsAvailable
-            {
-                nameColor = Color.secondary
-            }
+            // 非赞助者：图标置灰 + 感叹号标记 + 不可点击
+            let isLocked = section.isPatronExclusive && !PurchaseManager.shared.isPatronIconsAvailable
+            let nameColor: Color = isLocked ? Color.secondary : Color.primary
 
-            // 卡片：图标预览 + 名称（选中态打勾）
             cell.contentConfiguration = UIHostingConfiguration {
                 VStack(spacing: 8)
                 {
@@ -367,6 +364,8 @@ private extension AltAppIconsViewController
                                 .interpolation(.high)
                                 .frame(width: 64, height: 64)
                                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .grayscale(isLocked ? 1.0 : 0.0)
+                                .opacity(isLocked ? 0.45 : 1.0)
                         }
                         else
                         {
@@ -375,7 +374,15 @@ private extension AltAppIconsViewController
                                 .frame(width: 64, height: 64)
                         }
 
-                        if isSelected
+                        if isLocked
+                        {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .font(.system(size: 20, weight: .semibold))
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(.white, Color.orange)
+                                .offset(x: 6, y: 6)
+                        }
+                        else if isSelected
                         {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 20, weight: .semibold))
@@ -466,9 +473,20 @@ extension AltAppIconsViewController
     override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath)
     {
         let section = Section.allCases[indexPath.section]
-        if section.isPatronExclusive
+        if section.isPatronExclusive && !PurchaseManager.shared.isPatronIconsAvailable
         {
-            guard PurchaseManager.shared.isPatronIconsAvailable else { return }
+            let alertController = UIAlertController(title: NSLocalizedString("Patron Icons Locked", comment: ""),
+                                                    message: NSLocalizedString("These app icons are available to Patreon supporters. Join our Patreon to unlock them.", comment: ""),
+                                                    preferredStyle: .alert)
+            alertController.addAction(UIAlertAction(title: NSLocalizedString("Join our Patreon", comment: ""), style: .default) { _ in
+                if let url = URL(string: "https://patreon.com/rileyshane")
+                {
+                    UIApplication.shared.open(url)
+                }
+            })
+            alertController.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel))
+            self.present(alertController, animated: true)
+            return
         }
         
         let icon = self.dataSource.item(at: indexPath)
