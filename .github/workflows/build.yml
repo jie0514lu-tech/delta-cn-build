@@ -1,0 +1,115 @@
+name: Build Delta CN IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout recipe
+        uses: actions/checkout@v4
+
+      - name: Toolchain info
+        run: |
+          sw_vers
+          ls /Applications | grep -i xcode || true
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Clone Delta (pinned commit) + submodules
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          SHA=$(tr -d '[:space:]' < PATCHED_COMMIT)
+          echo "pinned commit: $SHA"
+          git clone --no-checkout https://github.com/rileytestut/Delta.git src
+          cd src
+          git checkout "$SHA"
+          git submodule update --init --recursive --depth 1
+          echo "submodules:"; git submodule status | head -20
+
+      - name: Apply delta-cn patch + overlay
+        run: |
+          cd src
+          git apply -v ../patch/delta-cn.patch
+          cp -Rv ../overlay/. .
+          echo "--- 本地化资源 ---"
+          ls -la Delta/Resources/zh-Hans.lproj Delta/Resources/en.lproj
+          echo "--- 语言管理器 ---"
+          ls -la Delta/Localization/LanguageManager.swift
+          echo "--- 入口已改 ---"
+          grep -n "applyStoredLanguage" Delta/AppDelegate.swift
+          grep -n "LanguageSection" Delta/Settings/SettingsView.swift
+
+      - name: Install CocoaPods
+        run: |
+          pod --version || sudo gem install cocoapods --no-document
+          pod --version
+
+      - name: pod install
+        run: |
+          cd src
+          pod install --repo-update
+
+      - name: Build (unsigned)
+        run: |
+          cd src
+          set -o pipefail
+          xcodebuild \
+            -workspace Delta.xcworkspace \
+            -scheme Delta \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            EXPANDED_CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            build 2>&1 | tee build.log | tail -n 200
+
+      - name: Post-process bundle + package IPA
+        run: |
+          cd src
+          APP=$(find build/Build/Products -maxdepth 3 -name 'Delta.app' -type d | head -n 1)
+          echo "APP=$APP"
+          test -d "$APP" || { echo "构建失败：找不到 Delta.app"; tail -n 200 build.log; exit 1; }
+          for L in zh-Hans en; do
+            mkdir -p "$APP/$L.lproj"
+            for f in Resources/$L.lproj/*.strings; do
+              [ -e "$f" ] || continue
+              cp -f "$f" "$APP/$L.lproj/"
+            done
+          done
+          echo "--- bundle 内本地化 ---"
+          ls -la "$APP/zh-Hans.lproj"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleLocalizations" "$APP/Info.plist"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Info.plist" || true
+          rm -rf Payload Delta-CN-unsigned.ipa
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          ZIPOPTS=(-qry)
+          /usr/bin/zip "${ZIPOPTS[@]}" Delta-CN-unsigned.ipa Payload
+          ls -lh Delta-CN-unsigned.ipa
+          shasum -a 256 Delta-CN-unsigned.ipa | tee sha256.txt
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Delta-CN-unsigned-ipa
+          path: |
+            src/Delta-CN-unsigned.ipa
+            src/sha256.txt
+            src/build.log
+
+      - name: Upload log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-failure
+          path: src/build.log

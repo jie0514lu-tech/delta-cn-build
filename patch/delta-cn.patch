@@ -1,0 +1,177 @@
+diff --git a/Delta.xcodeproj/project.pbxproj b/Delta.xcodeproj/project.pbxproj
+index 774b154..beca083 100644
+--- a/Delta.xcodeproj/project.pbxproj
++++ b/Delta.xcodeproj/project.pbxproj
+@@ -32,6 +32,8 @@
+ /* End PBXAggregateTarget section */
+ 
+ /* Begin PBXBuildFile section */
++		B2275A963AD238776F7575C5 /* LanguageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36B38976697ADDC89C7949B3 /* LanguageManager.swift */; };
++		B8020FDA6F2200FD6DB03277 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5412ED66C6DCD7DC7EB06E81 /* Localizable.strings */; };
+ 		0FCC04D3E01F2316ACC420BC /* OriginalGBA.cikernel in Resources */ = {isa = PBXBuildFile; fileRef = CC9328D3339318FF5C281032 /* OriginalGBA.cikernel */; };
+ 		18FC614F90FE76140AAECE67 /* DeltaOperatorUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCBF2F877CA6072880A54F35 /* DeltaOperatorUtils.swift */; };
+ 		1FA4ABA79AB72914FE414A61 /* libPods-Delta.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DC866E433B3BA9AE18ABA1EC /* libPods-Delta.a */; };
+@@ -622,6 +624,9 @@
+ /* End PBXCopyFilesBuildPhase section */
+ 
+ /* Begin PBXFileReference section */
++		36B38976697ADDC89C7949B3 /* LanguageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageManager.swift; sourceTree = "<group>"; };
++		FFB3AE3015635B6B8BE11FC8 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
++		E7FC6235FA3F12F20ED29C71 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = "en.lproj/Localizable.strings"; sourceTree = "<group>"; };
+ 		0654CFCA3D2CB4D35CC99F89 /* OperatorSlotDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperatorSlotDataSource.swift; sourceTree = "<group>"; };
+ 		0B6FDC5A03AD5693BEFFE87C /* GamesViewController+Operator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GamesViewController+Operator.swift"; sourceTree = "<group>"; };
+ 		2157B527EA676AA703BEBF02 /* DeltaOperatorFacade.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeltaOperatorFacade.swift; sourceTree = "<group>"; };
+@@ -1045,6 +1050,14 @@
+ /* End PBXFrameworksBuildPhase section */
+ 
+ /* Begin PBXGroup section */
++		8D44386A19BB202D56A4A629 /* Localization */ = {
++			isa = PBXGroup;
++			children = (
++				36B38976697ADDC89C7949B3 /* LanguageManager.swift */,
++			);
++			path = Localization;
++			sourceTree = "<group>";
++		};
+ 		11F7EF970F3EE7DAA5EE0DC8 /* Sources */ = {
+ 			isa = PBXGroup;
+ 			children = (
+@@ -1539,6 +1552,7 @@
+ 				D55183C12FEB2259009A96CC /* RevenueCatAPI.plist */,
+ 				D5B0F4E42D67F0660069F4DB /* WhatsNew.plist */,
+ 				82F450AA2E6A1CD00097CE1C /* AppIcon.icon */,
++				5412ED66C6DCD7DC7EB06E81 /* Localizable.strings */,
+ 			);
+ 			path = Resources;
+ 			sourceTree = "<group>";
+@@ -1622,6 +1636,7 @@
+ 				BF5942571E09BB5D0051894B /* Components */,
+ 				BF696B7E1D9B2AE6009639E0 /* Theming */,
+ 				BF090CEE1B490C1A00DCAB45 /* Extensions */,
++				8D44386A19BB202D56A4A629 /* Localization */,
+ 				BFFA71DA1AAC406100EE9DD1 /* Supporting Files */,
+ 			);
+ 			path = Delta;
+@@ -2417,6 +2432,7 @@
+ 				CA0101012F8E000100000002 /* CheatIcons.plist in Resources */,
+ 				BF6BF3211EB82362008E83CD /* GamesDatabase.storyboard in Resources */,
+ 				D5E12AED2D011640000C7531 /* Profanity.txt in Resources */,
++				B8020FDA6F2200FD6DB03277 /* Localizable.strings in Resources */,
+ 				BFAB9F88219A4B670080EC7D /* GoogleService-Info.plist in Resources */,
+ 				BF3540001C5DA3C500C1184C /* PausePresentationControllerContentView.xib in Resources */,
+ 				BF5E7F461B9A652600AE44F8 /* Settings.storyboard in Resources */,
+@@ -2658,6 +2674,7 @@
+ 				D5E7E6F22D91F7A10057CD52 /* BecomePatronButton.swift in Sources */,
+ 				BFE4269E1D9C68E600DC913F /* SaveStatesStoryboardSegue.swift in Sources */,
+ 				BFFA71DD1AAC406100EE9DD1 /* AppDelegate.swift in Sources */,
++				B2275A963AD238776F7575C5 /* LanguageManager.swift in Sources */,
+ 				BF525EE81FF5F370004AA849 /* DeepLinkController.swift in Sources */,
+ 				BF59426B1E09BBD00051894B /* GridCollectionViewLayout.swift in Sources */,
+ 				BF6424851F5CBDC900D6AB44 /* UIView+ParentViewController.swift in Sources */,
+@@ -2938,6 +2955,15 @@
+ /* End PBXTargetDependency section */
+ 
+ /* Begin PBXVariantGroup section */
++		5412ED66C6DCD7DC7EB06E81 /* Localizable.strings */ = {
++			isa = PBXVariantGroup;
++			children = (
++				FFB3AE3015635B6B8BE11FC8 /* zh-Hans */,
++				E7FC6235FA3F12F20ED29C71 /* en */,
++			);
++			name = Localizable.strings;
++			sourceTree = "<group>";
++		};
+ 		BF353FF41C5D837600C1184C /* PauseMenu.storyboard */ = {
+ 			isa = PBXVariantGroup;
+ 			children = (
+diff --git a/Delta/AppDelegate.swift b/Delta/AppDelegate.swift
+index 162a286..41ec826 100644
+--- a/Delta/AppDelegate.swift
++++ b/Delta/AppDelegate.swift
+@@ -38,6 +38,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate
+     {
+         Settings.registerDefaults()
+         
++        // 应用用户选择的界面语言（跟随系统 / English / 简体中文）
++        LanguageManager.shared.applyStoredLanguage()
++        
+         self.registerCores()
+         self.configureAppearance()
+         self.updateSettings()
+diff --git a/Delta/Settings/SettingsView.swift b/Delta/Settings/SettingsView.swift
+index 38bd4dc..b9db4d8 100644
+--- a/Delta/Settings/SettingsView.swift
++++ b/Delta/Settings/SettingsView.swift
+@@ -39,6 +39,7 @@ struct SettingsView: View
+                 EmulationSection()
+                 OnlineMultiplayerSection()
+                 DisplaySection()
++                LanguageSection()
+                 ServicesSection()
+                 MiscellaneousSection()
+                 CreditsSection()
+@@ -390,6 +391,48 @@ private struct DisplaySection: View
+     }
+ }
+ 
++// MARK: - Language
++
++private struct LanguageSection: View
++{
++    @ObservedObject
++    private var languageManager: LanguageManager = .shared
++
++    @SwiftUI.State
++    private var didChangeLanguage = false
++
++    var body: some View {
++        Section {
++            Picker(selection: Binding(get: {
++                languageManager.language
++            }, set: { newLanguage in
++                guard newLanguage != languageManager.language else { return }
++
++                languageManager.select(newLanguage)
++                didChangeLanguage = true
++            })) {
++                ForEach(DeltaLanguage.allCases) { language in
++                    Text(language.displayName).tag(language)
++                }
++            } label: {
++                Label {
++                    Text("Language")
++                } icon: {
++                    Image(systemName: "globe")
++                }
++            }
++            .pickerStyle(.menu)
++        } footer: {
++            Text("Restart Delta to apply the new language everywhere.")
++        }
++        .alert("Language Changed", isPresented: $didChangeLanguage) {
++            Button("OK", role: .cancel) {}
++        } message: {
++            Text("Please restart Delta to apply the new language.")
++        }
++    }
++}
++
+ // MARK: - Experimental, Minor, & Advanced
+ 
+ private struct MiscellaneousSection: View
+diff --git a/Delta/Supporting Files/Info.plist b/Delta/Supporting Files/Info.plist
+index 3073436..3d15e75 100644
+--- a/Delta/Supporting Files/Info.plist	
++++ b/Delta/Supporting Files/Info.plist	
+@@ -6,6 +6,11 @@
+ 	<string>00008110-000A68390A82801E</string>
+ 	<key>CFBundleDevelopmentRegion</key>
+ 	<string>en</string>
++	<key>CFBundleLocalizations</key>
++	<array>
++		<string>en</string>
++		<string>zh-Hans</string>
++	</array>
+ 	<key>CFBundleDocumentTypes</key>
+ 	<array>
+ 		<dict>
