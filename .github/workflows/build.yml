@@ -193,7 +193,7 @@ jobs:
 
           for L in zh-Hans en; do
             mkdir -p "$APP/$L.lproj"
-            for f in Resources/$L.lproj/*.strings; do
+            for f in Resources/$L.lproj/*; do
               [ -e "$f" ] || continue
               cp -f "$f" "$APP/$L.lproj/"
             done
