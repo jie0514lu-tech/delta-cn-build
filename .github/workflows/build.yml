@@ -17,11 +17,8 @@ jobs:
       - name: Select Xcode (26.4.1 优先，规避 actool .icon 崩溃)
         run: |
           ls /Applications | grep -i '^Xcode' || true
-          XC=""
-          for cand in /Applications/Xcode_26.4.1.app /Applications/Xcode_26.4.app /Applications/Xcode_26.3.app; do
-            if [ -d "$cand" ]; then XC="$cand"; break; fi
-          done
-          if [ -z "$XC" ]; then XC=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -n 1); fi
+          XC=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -n 1)
+          if [ -z "$XC" ]; then XC="/Applications/Xcode.app"; fi
           echo "using: $XC"
           sudo xcode-select -s "$XC/Contents/Developer"
           xcodebuild -version
@@ -165,22 +162,6 @@ jobs:
           PY
           ls -la "$ICON_DIR"
 
-      - name: Diagnose actool per catalog
-        run: |
-          cd src
-          ACTOOL="$(xcode-select -p)/usr/bin/actool"
-          echo "actool: $ACTOOL"
-          mkdir -p /tmp/actout
-          for cat in Resources/Assets.xcassets Resources/Icons.xcassets; do
-            echo "=== $cat ==="
-            "$ACTOOL" "$cat" --compile /tmp/actout --output-format human-readable-text \
-              --notices --warnings --platform iphoneos --minimum-deployment-target 17.4 \
-              --target-device iphone --target-device ipad \
-              --app-icon AppIcon --include-all-app-icons \
-              --bundle-identifier com.rileytestut.Delta --development-region English \
-              < /dev/null 2>&1 | tail -n 15
-            echo "exit: $?"
-          done
 
       - name: Build (unsigned)
         run: |
