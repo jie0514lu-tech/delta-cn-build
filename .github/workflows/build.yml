@@ -115,7 +115,9 @@ jobs:
       - name: Build (unsigned)
         run: |
           cd src
-          set -o pipefail
+          # actool 在无 GUI 的 CI 环境会因 stdin 不是 /dev/null 而崩溃
+          # （参见 Xcode 26.x actool .icon nil-objects 崩溃），显式给 /dev/null。
+          set +e
           xcodebuild \
             -workspace Delta.xcworkspace \
             -scheme Delta \
@@ -128,7 +130,11 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             EXPANDED_CODE_SIGN_IDENTITY="" \
             PROVISIONING_PROFILE_SPECIFIER="" \
-            build 2>&1 | tee build.log | tail -n 200
+            build < /dev/null > build.log 2>&1
+          STATUS=$?
+          tail -n 120 build.log
+          echo "xcodebuild exit: $STATUS"
+          exit $STATUS
 
       - name: Post-process bundle + package IPA
         run: |
