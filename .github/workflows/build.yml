@@ -28,13 +28,23 @@ jobs:
 
       - name: Clone Delta (pinned commit) + submodules
         run: |
+          export GIT_TERMINAL_PROMPT=0
           git config --global url."https://github.com/".insteadOf "git@github.com:"
           SHA=$(tr -d '[:space:]' < PATCHED_COMMIT)
           echo "pinned commit: $SHA"
-          git clone --no-checkout https://github.com/rileytestut/Delta.git src
+          for attempt in 1 2 3; do
+            echo "clone attempt $attempt"
+            rm -rf src
+            if git clone --no-checkout https://github.com/rileytestut/Delta.git src; then break; fi
+            sleep 15
+          done
+          test -d src/.git || { echo "clone 失败"; exit 1; }
           cd src
           git checkout "$SHA"
-          git submodule update --init --recursive --depth 1
+          for attempt in 1 2 3; do
+            if git submodule update --init --recursive --depth 1; then break; fi
+            sleep 15
+          done
           echo "submodules:"; git submodule status | head -20
 
       - name: Apply translation patch + overlay
