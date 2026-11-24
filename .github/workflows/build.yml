@@ -21,6 +21,16 @@ jobs:
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-version
 
+      - name: Select newest Xcode 26
+        run: |
+          XC=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -n 1)
+          if [ -z "$XC" ]; then XC="/Applications/Xcode.app"; fi
+          echo "using: $XC"
+          sudo xcode-select -s "$XC/Contents/Developer"
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          swift --version
+
       - name: Clone Delta (pinned commit) + submodules
         run: |
           git config --global url."https://github.com/".insteadOf "git@github.com:"
