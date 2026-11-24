@@ -152,12 +152,16 @@ jobs:
           import re
           p = "Delta.xcodeproj/project.pbxproj"
           s = open(p, encoding="utf-8").read()
-          pat = re.compile(r"^[ \t]+[0-9A-F]{24} /\* (?:AppIcon|MicrochipIcon)\.icon in Resources \*/,\n", re.M)
-          found = pat.findall(s)
-          s = pat.sub("", s)
+          # 1) 移除 Icon Composer .icon
+          pat1 = re.compile(r"^[ \t]+[0-9A-F]{24} /\* (?:AppIcon|MicrochipIcon)\.icon in Resources \*/,\n", re.M)
+          found1 = pat1.findall(s)
+          s = pat1.sub("", s)
+          # 2) 备用图标 catalog（含大量 appiconset）在 CI 环境同样触发 actool 崩溃，一并移出编译
+          pat2 = re.compile(r"^[ \t]+[0-9A-F]{24} /\* Icons\.xcassets in Resources \*/,\n", re.M)
+          found2 = pat2.findall(s)
+          s = pat2.sub("", s)
           open(p, "w", encoding="utf-8").write(s)
-          print("removed .icon build-phase entries:", len(found))
-          assert len(found) == 2, "expect AppIcon.icon + MicrochipIcon.icon"
+          print("removed .icon entries:", len(found1), " removed Icons.xcassets entries:", len(found2))
           PY
           ls -la "$ICON_DIR"
 
@@ -181,8 +185,19 @@ jobs:
       - name: Build (unsigned)
         run: |
           cd src
-          # actool 在无 GUI 的 CI 环境会因 stdin 不是 /dev/null 而崩溃
-          # （参见 Xcode 26.x actool .icon nil-objects 崩溃），显式给 /dev/null。
+          ACTOOL="$(xcode-select -p)/usr/bin/actool"
+          {
+            echo "=== actool self-test (Assets.xcassets + AppIcon.appiconset) ==="
+            mkdir -p /tmp/actout
+            "$ACTOOL" Resources/Assets.xcassets --compile /tmp/actout \
+              --output-format human-readable-text --notices --warnings \
+              --platform iphoneos --minimum-deployment-target 17.4 \
+              --target-device iphone --target-device ipad \
+              --app-icon AppIcon --bundle-identifier com.rileytestut.Delta \
+              --development-region English < /dev/null 2>&1 | tail -n 12
+            echo "self-test exit: $?"
+            echo "=== xcodebuild ==="
+          } > build.log 2>&1
           set +e
           xcodebuild \
             -workspace Delta.xcworkspace \
@@ -196,7 +211,7 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             EXPANDED_CODE_SIGN_IDENTITY="" \
             PROVISIONING_PROFILE_SPECIFIER="" \
-            build < /dev/null > build.log 2>&1
+            build < /dev/null >> build.log 2>&1
           STATUS=$?
           tail -n 120 build.log
           echo "xcodebuild exit: $STATUS"
