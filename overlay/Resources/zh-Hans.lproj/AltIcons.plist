@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>classic</key>
+	<array>
+		<dict>
+			<key>imageName</key>
+			<string>破损图标</string>
+			<key>name</key>
+			<string>破损</string>
+		</dict>
+		<dict>
+			<key>imageName</key>
+			<string>原版图标</string>
+			<key>name</key>
+			<string>原版</string>
+		</dict>
+	</array>
+	<key>glass</key>
+	<array>
+		<dict>
+			<key>imageName</key>
+			<string>应用图标</string>
+			<key>name</key>
+			<string>默认</string>
+		</dict>
+	</array>
+	<key>modern</key>
+	<array>
+		<dict>
+			<key>imageName</key>
+			<string>现代图标</string>
+			<key>name</key>
+			<string>Delta</string>
+		</dict>
+		<dict>
+			<key>imageName</key>
+			<string>Delta 红色</string>
+			<key>name</key>
+			<string>照片编辑器</string>
+		</dict>
+		<dict>
+			<key>imageName</key>
+			<string>GBA4iOS</string>
+			<key>name</key>
+			<string>GBA4iOS</string>
+		</dict>
+	</array>
+	<key>patrons</key>
+	<array>
+		<dict>
+			<key>imageName</key>
+			<string>Delta 金色</string>
+			<key>name</key>
+			<string>Delta 金色</string>
+		</dict>
+		<dict>
+			<key>credit</key>
+			<string>塞巴斯蒂安·德·维特（Halide）</string>
+			<key>imageName</key>
+			<string>哈洛根尼德</string>
+			<key>name</key>
+			<string>哈洛根尼德</string>
+			<key>url</key>
+			<string>https://halide.cam</string>
+		</dict>
+		<dict>
+			<key>credit</key>
+			<string>本·麦卡锡</string>
+			<key>imageName</key>
+			<string>番茄酱图标</string>
+			<key>name</key>
+			<string>番茄酱</string>
+			<key>url</key>
+			<string>https://benricemccarthy.com/</string>
+		</dict>
+		<dict>
+			<key>credit</key>
+			<string>肖恩·弗莱彻</string>
+			<key>imageName</key>
+			<string>芯片图标</string>
+			<key>name</key>
+			<string>芯片</string>
+			<key>url</key>
+			<string>https://www.threads.net/@seanfletchr</string>
+		</dict>
+	</array>
+	<key>patronsButtonPack</key>
+	<array>
+		<dict>
+			<key>credit</key>
+			<string>路易·曼蒂亚</string>
+			<key>imageName</key>
+			<string>NES 图标</string>
+			<key>name</key>
+			<string>NES</string>
+			<key>url</key>
+			<string>https://lmnt.me</string>
+		</dict>
+		<dict>
+			<key>credit</key>
+			<string>路易·曼蒂亚</string>
+			<key>imageName</key>
+			<string>SNES 图标</string>
+			<key>name</key>
+			<string>SNES</string>
+			<key>url</key>
+			<string>https://lmnt.me</string>
+		</dict>
+		<dict>
+			<key>credit</key>
+			<string>路易·曼蒂亚</string>
+			<key>imageName</key>
+			<string>N64 图标</string>
+			<key>name</key>
+			<string>N64</string>
+			<key>url</key>
+			<string>https://lmnt.me</string>
+		</dict>
+		<dict>
+			<key>credit</key>
+			<string>路易·曼蒂亚</string>
+			<key>imageName</key>
+			<string>GBC 图标</string>
+			<key>name</key>
+			<string>GBC</string>
+			<key>url</key>
+			<string>https://lmnt.me</string>
+		</dict>
+		<dict>
+			<key>credit</key>
+			<string>路易·曼蒂亚</string>
+			<key>imageName</key>
+			<string>GBC 图标_蒲公英</string>
+			<key>name</key>
+			<string>GBC（蒲公英）</string>
+			<key>url</key>
+			<string>https://lmnt.me</string>
+		</dict>
+		<dict>
+			<key>credit</key>
+			<string>路易·曼蒂亚</string>
+			<key>imageName</key>
+			<string>GBC 图标_莓果</string>
+			<key>name</key>
+			<string>GBC（莓果）</string>
+			<key>url</key>
+			<string>https://lmnt.me</string>
+		</dict>
+		<dict>
+			<key>credit</key>
+			<string>路易·曼蒂亚</string>
+			<key>imageName</key>
+			<string>GBC 图标_青蓝</string>
+			<key>name</key>
+			<string>GBC（青蓝）</string>
+			<key>url</key>
+			<string>https://lmnt.me</string>
+		</dict>
+		<dict>
+			<key>credit</key>
+			<string>路易·曼蒂亚</string>
+			<key>imageName</key>
+			<string>GBC 图标_奇异果</string>
+			<key>name</key>
+			<string>GBC（奇异果）</string>
+			<key>url</key>
+			<string>https://lmnt.me</string>
+		</dict>
+		<dict>
+			<key>credit</key>
+			<string>路易·曼蒂亚</string>
+			<key>imageName</key>
+			<string>GB 图标</string>
+			<key>name</key>
+			<string>Game Boy</string>
+			<key>url</key>
+			<string>https://lmnt.me</string>
+		</dict>
+		<dict>
+			<key>credit</key>
+			<string>路易·曼蒂亚</string>
+			<key>imageName</key>
+			<string>GBA 图标</string>
+			<key>name</key>
+			<string>GBA</string>
+			<key>url</key>
+			<string>https://lmnt.me</string>
+		</dict>
+	</array>
+</dict>
+</plist>
